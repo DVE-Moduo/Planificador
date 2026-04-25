@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#324158">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Planificador">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Planificador Semanal</title>
+<style>
+:root{
+  --navy:#324158;--slate:#6B7E93;--blue-light:#B4C8DC;--red:#C2274B;
+  --bg:#f0f4f8;--white:#fff;--border:#e2e8f0;--text:#1a2030;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none}
+input,select{-webkit-user-select:text;user-select:text}
+
+/* ── HEADER ── */
+.hdr{background:var(--navy);padding:10px 14px 8px;display:flex;align-items:center;gap:8px;flex-shrink:0;padding-top:max(10px,env(safe-area-inset-top))}
+.accent{width:3px;height:28px;background:var(--red);border-radius:2px;flex-shrink:0}
+.hdr-info{flex:1;min-width:0}
+.hdr-title{color:var(--blue-light);font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-sub{font-size:10px;color:var(--slate);margin-top:1px}
+.hdr-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.ganado{background:#1e3d20;border-radius:5px;padding:3px 7px;font-size:10px;font-weight:600;color:#97C459;white-space:nowrap}
+.clock{color:#fff;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ── MONTH NAV ── */
+.month-bar{background:var(--white);border-bottom:1px solid var(--border);padding:7px 12px;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.month-label{font-size:13px;font-weight:600;color:var(--navy);flex:1;text-align:center}
+.icon-btn{width:30px;height:30px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:16px;color:var(--slate);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.today-btn{padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--white);font-size:11px;color:var(--slate);cursor:pointer;flex-shrink:0}
+
+/* ── WEEK TABS ── */
+.week-bar{background:var(--white);border-bottom:1px solid var(--border);padding:5px 10px;display:flex;gap:4px;overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+.week-bar::-webkit-scrollbar{display:none}
+.wtab{padding:4px 10px;border-radius:5px;font-size:11px;font-weight:500;border:1px solid var(--border);background:var(--white);color:var(--slate);white-space:nowrap;flex-shrink:0;cursor:pointer}
+.wtab.active{background:var(--navy);color:var(--blue-light);border-color:var(--navy)}
+
+/* ── METRICS ── */
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:6px 10px;flex-shrink:0;background:var(--bg)}
+.metric{background:var(--white);border-radius:6px;border:1px solid var(--border);padding:5px 8px;text-align:center}
+.metric-label{font-size:9px;color:var(--slate);text-transform:uppercase;letter-spacing:.03em}
+.metric-value{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+.mv-p{color:#185FA5}.mv-a{color:var(--red)}.mv-d{color:#3B6D11}.mv-v{color:#854F0B}.mv-u{color:#6B3FA0}.mv-g{color:#3B6D11;font-size:12px}
+
+/* ── ALERT ── */
+.alert{border-radius:7px;padding:8px 12px;margin:5px 10px 0;font-size:12px;font-weight:500;display:none;align-items:center;gap:8px;border-left:3px solid;animation:si .2s ease;flex-shrink:0}
+.alert.show{display:flex}
+@keyframes si{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+.ab-info{background:#E6F1FB;color:#0C447C;border-color:#378ADD}
+.ab-warn{background:#FAEEDA;color:#633806;border-color:#EF9F27}
+.ab-danger{background:#FCEBEB;color:#791F1F;border-color:#E24B4A}
+.ab-success{background:#EAF3DE;color:#27500A;border-color:#639922}
+
+/* ── MAIN CONTENT ── */
+.content{flex:1;overflow-y:auto;padding:8px 10px;padding-bottom:80px;-webkit-overflow-scrolling:touch}
+
+/* ── CALENDAR ── */
+.cal-legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.leg{display:flex;align-items:center;gap:3px;font-size:10px;color:var(--slate)}
+.leg-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border-radius:8px;overflow:hidden}
+.cal-hdr{background:var(--navy);color:var(--blue-light);font-size:9px;font-weight:600;text-align:center;padding:4px 1px;text-transform:uppercase;letter-spacing:.03em}
+.cal-cell{background:var(--white);min-height:60px;padding:3px 2px;cursor:pointer;transition:background .1s}
+.cal-cell:active{background:#f0f4f8}
+.cal-cell.today{background:#fff5f7}
+.cal-cell.selected{outline:2px solid var(--navy);outline-offset:-2px}
+.cal-cell.other{background:#f8fafc}
+.cal-num{font-size:11px;font-weight:600;color:var(--navy);width:18px;height:18px;display:flex;align-items:center;justify-content:center;margin-bottom:1px}
+.cal-cell.today .cal-num{background:var(--red);color:#fff;border-radius:50%}
+.cal-cell.other .cal-num{color:#bcc4cc}
+.cal-chip{font-size:9px;border-radius:2px;padding:1px 3px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;font-weight:500}
+.chip-p{background:#DBEAFE;color:#1e40af}
+.chip-a{background:#FEE2E2;color:#991b1b}
+.chip-d{background:#DCFCE7;color:#166534}
+.chip-v{background:#FEF3C7;color:#92400e}
+.chip-u{background:#EDE9FE;color:#5b21b6}
+.cal-more{font-size:9px;color:var(--slate);padding:0 3px}
+
+/* ── CARD ── */
+.card{background:var(--white);border-radius:10px;border:1px solid var(--border);padding:10px 12px;margin-bottom:8px}
+.card-title{font-size:11px;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;display:flex;align-items:center;gap:5px}
+.badge{background:var(--red);color:#fff;border-radius:4px;padding:1px 5px;font-size:10px}
+
+/* ── DAY NAV ── */
+.day-row{display:flex;gap:4px;overflow-x:auto;margin-bottom:8px;scrollbar-width:none;padding-bottom:2px}
+.day-row::-webkit-scrollbar{display:none}
+.dbt{padding:5px 9px;border-radius:6px;font-size:11px;font-weight:500;border:1px solid var(--border);background:var(--white);color:var(--slate);white-space:nowrap;flex-shrink:0;cursor:pointer}
+.dbt.active{background:var(--navy);color:var(--blue-light);border-color:var(--navy)}
+.dbt.today{border-color:var(--red)}
+
+/* ── TASK ROW MÓVIL ── */
+.trow{border-radius:8px;border:1px solid var(--border);border-left:3px solid transparent;background:var(--white);margin-bottom:6px;padding:8px 10px;transition:border-color .2s}
+.trow.s-Pending{border-left-color:var(--blue-light)}
+.trow.s-InProgress{border-left-color:var(--red);background:#fff8f9}
+.trow.s-Completed{border-left-color:#639922;opacity:.6}
+.trow.s-Overdue{border-left-color:#EF9F27;background:#fffbf0}
+.trow-top{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.trow-times{display:flex;align-items:center;gap:4px;flex:1}
+.trow-arrow{color:var(--slate);font-size:12px}
+input[type=time]{border:1px solid var(--border);border-radius:5px;padding:3px 5px;font-size:12px;background:#f8fafc;color:var(--text);width:82px;height:28px;font-variant-numeric:tabular-nums}
+input[type=time]:focus{outline:none;border-color:var(--slate)}
+.dur-badge{font-size:11px;font-weight:500;color:var(--navy);background:var(--blue-light);border-radius:4px;padding:2px 6px;white-space:nowrap}
+.trow-bot{display:flex;flex-direction:column;gap:4px}
+input[type=text]{border:1px solid var(--border);border-radius:5px;padding:4px 7px;font-size:13px;background:#f8fafc;color:var(--text);width:100%;height:30px}
+input[type=text]:focus{outline:none;border-color:var(--slate);background:var(--white)}
+.trow-meta{display:flex;gap:4px;align-items:center}
+select{border:1px solid var(--border);border-radius:5px;padding:3px 4px;font-size:11px;background:#f8fafc;color:var(--text);height:28px;flex:1}
+select:focus{outline:none;border-color:var(--slate)}
+
+/* ── BADGES ── */
+.sbadge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:5px;white-space:nowrap;cursor:pointer;border:1px solid transparent;flex-shrink:0}
+.sb-p{background:#E6F1FB;color:#185FA5;border-color:#B5D4F4}
+.sb-a{background:#FCEBEB;color:#A32D2D;border-color:#F7C1C1}
+.sb-d{background:#EAF3DE;color:#3B6D11;border-color:#C0DD97}
+.sb-v{background:#FAEEDA;color:#854F0B;border-color:#FAC775}
+.sb-u{background:#F3EEFF;color:#6B3FA0;border-color:#C9B3F5}
+
+/* ── UNASSIGNED ── */
+.urow{border-radius:8px;border:1px solid var(--border);border-left:3px solid #6B3FA0;background:#fdf8ff;margin-bottom:6px;padding:8px 10px}
+.urow-main{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.urow-meta{display:flex;gap:4px}
+.btn-assign-sm{padding:4px 10px;border-radius:5px;background:#F3EEFF;color:#6B3FA0;border:1px solid #C9B3F5;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0}
+
+/* ── BUTTONS ── */
+.btn-del{width:28px;height:28px;border:none;background:transparent;cursor:pointer;color:#ccd2d9;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.btn-del:active{background:#fdeef2;color:var(--red)}
+.btn-add{width:100%;padding:10px;border:1.5px dashed var(--blue-light);border-radius:8px;background:transparent;color:var(--slate);font-size:13px;cursor:pointer;margin-top:4px}
+.btn-add:active{background:#f5f7fa}
+.btn-p{padding:8px 16px;background:var(--navy);color:var(--blue-light);border:none;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer}
+.btn-s{padding:7px 12px;background:var(--white);color:var(--navy);border:1px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer}
+.btn-undo{padding:7px 10px;background:var(--white);color:var(--slate);border:1px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px}
+.btn-undo:disabled{opacity:.35;cursor:default}
+
+/* ── ACTION BAR ── */
+.action-bar{display:flex;gap:6px;padding:6px 10px;background:var(--white);border-top:1px solid var(--border);flex-shrink:0}
+.action-bar .btn-p,.action-bar .btn-s,.action-bar .btn-undo{flex:1;justify-content:center}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{background:var(--white);border-top:1px solid var(--border);display:flex;flex-shrink:0;padding-bottom:max(8px,env(safe-area-inset-bottom))}
+.nav-btn{flex:1;padding:8px 4px 6px;border:none;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--slate);font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;transition:color .15s}
+.nav-btn.active{color:var(--navy)}
+.nav-btn svg{width:20px;height:20px}
+.nav-btn.active svg{stroke:var(--red)}
+
+/* ── REPORT ── */
+.rep-tabs{display:flex;gap:4px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none}
+.rep-tabs::-webkit-scrollbar{display:none}
+.rep-tab{padding:5px 10px;border-radius:5px;font-size:11px;font-weight:500;border:1px solid var(--border);background:var(--white);color:var(--slate);white-space:nowrap;flex-shrink:0;cursor:pointer}
+.rep-tab.active{background:var(--navy);color:var(--blue-light);border-color:var(--navy)}
+.rep-title{font-size:11px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid var(--blue-light)}
+.rep-row{display:grid;grid-template-columns:1fr 60px 40px 48px;gap:4px;align-items:center;padding:6px 0;border-bottom:1px solid #f4f6f8;font-size:12px}
+.rep-name{font-weight:500;color:var(--text)}
+.rep-val{text-align:right;font-weight:500;color:var(--navy)}
+.rep-pct{text-align:right;color:var(--slate)}
+.rep-prog{text-align:right;font-size:11px;color:var(--slate)}
+.rep-bar-w{height:3px;background:#f0f4f8;border-radius:2px;margin-top:3px}
+.rep-bar{height:3px;background:var(--red);border-radius:2px}
+.rep-total{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--navy);padding:8px 0 0;border-top:2px solid var(--navy);margin-top:4px}
+.empty{font-size:12px;color:#bcc4cc;padding:20px 0;text-align:center}
+
+/* ── SP STATUS ── */
+.sp-bar{background:#f8fafc;border:1px solid var(--border);border-radius:7px;padding:6px 10px;margin-bottom:8px;display:flex;align-items:center;gap:7px;font-size:11px;color:var(--slate)}
+.sp-status{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--white);border-radius:16px 16px 0 0;padding:20px 20px max(20px,env(safe-area-inset-bottom));width:100%;max-width:480px}
+.modal-title{font-size:15px;font-weight:600;color:var(--navy);margin-bottom:14px}
+.modal-field{margin-bottom:10px}
+.modal-field label{display:block;font-size:10px;color:var(--slate);margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em}
+.modal-field input{width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:14px;background:#f8fafc}
+.modal-field input:focus{outline:none;border-color:var(--slate)}
+.modal-actions{display:flex;gap:8px;margin-top:14px}
+.modal-actions .btn-p,.modal-actions .btn-s{flex:1;padding:10px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="accent"></div>
+  <div class="hdr-info">
+    <div class="hdr-title">Planificador Semanal</div>
+    <div class="hdr-sub" id="hdr-sub">Cargando...</div>
+  </div>
+  <div class="hdr-right">
+    <div class="ganado" id="ganado-val">0 min</div>
+    <div class="clock" id="clock">--:--</div>
+  </div>
+</div>
+
+<!-- MONTH NAV -->
+<div class="month-bar">
+  <button class="icon-btn" onclick="changeMonth(-1)">‹</button>
+  <span class="month-label" id="month-label">—</span>
+  <button class="icon-btn" onclick="changeMonth(1)">›</button>
+  <button class="today-btn" onclick="goToToday()">Hoy</button>
+</div>
+
+<!-- WEEK TABS -->
+<div class="week-bar" id="week-tabs"></div>
+
+<!-- METRICS -->
+<div class="metrics">
+  <div class="metric"><div class="metric-label">Pendientes</div><div class="metric-value mv-p" id="m-p">0</div></div>
+  <div class="metric"><div class="metric-label">En curso</div><div class="metric-value mv-a" id="m-a">0</div></div>
+  <div class="metric"><div class="metric-label">Completadas</div><div class="metric-value mv-d" id="m-d">0</div></div>
+  <div class="metric"><div class="metric-label">Vencidas</div><div class="metric-value mv-v" id="m-v">0</div></div>
+  <div class="metric"><div class="metric-label">Sin asignar</div><div class="metric-value mv-u" id="m-u">0</div></div>
+  <div class="metric"><div class="metric-label">Min ganados</div><div class="metric-value mv-g" id="m-g">0</div></div>
+</div>
+
+<!-- ALERT -->
+<div class="alert" id="alert-box">
+  <span id="alert-msg" style="flex:1"></span>
+  <span onclick="closeAlert()" style="cursor:pointer;font-size:16px;opacity:.5">×</span>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="content">
+
+  <!-- PANEL CALENDARIO -->
+  <div id="panel-cal">
+    <div class="cal-legend">
+      <div class="leg"><div class="leg-dot" style="background:#93C5FD"></div>Pendiente</div>
+      <div class="leg"><div class="leg-dot" style="background:#FCA5A5"></div>En curso</div>
+      <div class="leg"><div class="leg-dot" style="background:#86EFAC"></div>Completada</div>
+      <div class="leg"><div class="leg-dot" style="background:#FCD34D"></div>Vencida</div>
+      <div class="leg"><div class="leg-dot" style="background:#C4B5FD"></div>Sin asignar</div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <p style="font-size:11px;color:#aab5c2;text-align:center;margin-top:8px">Toca un día para verlo en el planificador</p>
+  </div>
+
+  <!-- PANEL PLANIFICADOR -->
+  <div id="panel-plan" style="display:none">
+    <!-- SharePoint -->
+    <div class="sp-bar">
+      <span class="sp-status" id="sp-status">Almacenamiento local activo</span>
+      <button class="btn-s" id="btn-sp-login" onclick="spLogin()" style="font-size:10px;padding:3px 8px">Conectar SharePoint</button>
+      <button class="btn-s" id="btn-sp-sync" onclick="syncWithSharePoint()" style="display:none;font-size:10px;padding:3px 8px">↻ Sync</button>
+    </div>
+    <!-- Sin asignar -->
+    <div class="card">
+      <div class="card-title">Sin asignar <span class="badge" id="unassigned-count">0</span></div>
+      <div id="unassigned-list"></div>
+      <button class="btn-add" onclick="addUnassigned()">+ Nueva tarea sin asignar</button>
+    </div>
+    <!-- Día -->
+    <div class="card">
+      <div class="day-row" id="day-nav"></div>
+      <div id="task-list"></div>
+      <button class="btn-add" onclick="addTask()">+ Añadir tarea</button>
+    </div>
+  </div>
+
+  <!-- PANEL REPORT -->
+  <div id="panel-rep" style="display:none">
+    <div class="card">
+      <div class="rep-tabs">
+        <button class="rep-tab active" data-mode="week"  onclick="renderReport('week')">Semana</button>
+        <button class="rep-tab"        data-mode="month" onclick="renderReport('month')">Mes</button>
+        <button class="rep-tab"        data-mode="disc"  onclick="renderReport('disc')">Disciplina</button>
+        <button class="rep-tab"        data-mode="proj"  onclick="renderReport('proj')">Proyecto</button>
+      </div>
+      <div id="rep-content"></div>
+      <button class="btn-s" onclick="exportCSV()" style="width:100%;margin-top:10px">Exportar CSV</button>
+    </div>
+  </div>
+
+  <!-- PANEL UNASSIGNED (atajo) -->
+  <div id="panel-unassigned" style="display:none">
+    <div class="card">
+      <div class="card-title">Sin asignar <span class="badge" id="unassigned-count2">0</span></div>
+      <div id="unassigned-list2"></div>
+      <button class="btn-add" onclick="addUnassigned()">+ Nueva tarea</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ACTION BAR -->
+<div class="action-bar">
+  <button class="btn-undo" id="btn-undo" onclick="doUndo()" disabled>
+    <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M8 3L3 8l5 5V9.5c3.5 0 6 1 7.5 4C15 9 12 5.5 8 5.5V3z"/></svg>
+    Deshacer
+  </button>
+  <button class="btn-p" id="btn-save" onclick="saveAll()">Guardar</button>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-tab="cal" onclick="switchTab('cal')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Calendario
+  </button>
+  <button class="nav-btn" data-tab="plan" onclick="switchTab('plan')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/></svg>
+    Planificador
+  </button>
+  <button class="nav-btn" data-tab="rep" onclick="switchTab('rep')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Report
+  </button>
+</nav>
+
+<!-- MODAL ASIGNAR -->
+<div class="modal-overlay" id="modal-assign">
+  <div class="modal">
+    <div class="modal-title">Asignar tarea</div>
+    <div class="modal-field"><label>Fecha</label><input type="date" id="assign-date"></div>
+    <div class="modal-field"><label>Hora inicio</label><input type="time" id="assign-start"></div>
+    <div class="modal-field"><label>Hora fin</label><input type="time" id="assign-end"></div>
+    <div class="modal-actions">
+      <button class="btn-s" onclick="closeModal('modal-assign')">Cancelar</button>
+      <button class="btn-p" onclick="confirmAssign()">Asignar</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

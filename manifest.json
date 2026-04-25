@@ -1,0 +1,25 @@
+{
+  "name": "Planificador Semanal",
+  "short_name": "Planificador",
+  "description": "Planificador semanal de tareas con notificaciones y registro de tiempo",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f0f4f8",
+  "theme_color": "#324158",
+  "orientation": "portrait-primary",
+  "lang": "es",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Hoy",
+      "short_name": "Hoy",
+      "description": "Ver tareas de hoy",
+      "url": "./index.html?view=today",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
